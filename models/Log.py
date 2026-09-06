@@ -16,9 +16,9 @@ class Logs(Base):
     ip_adress: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
     details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     club_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"),nullable=False)
-    ticket_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("ticket.id", ondelete="CASCADE"),nullable=False)
+    ticket_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("tickets.id", ondelete="CASCADE"),nullable=False)
 
     club = relationship("Club", back_populates="logs")
     user = relationship("User", back_populates="logs")

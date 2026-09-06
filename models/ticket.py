@@ -17,7 +17,7 @@ class Ticket(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
     registered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     club_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("user.id", ondelete="CASCADE") ,nullable=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE") ,nullable=True, index=True)
 
     club = relationship("Club", back_populates="tickets")
     user = relationship("User", back_populates="tickets")
