@@ -1,0 +1,34 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="fastapi" />
+          <option value="uvicorn" />
+          <option value="pydantic" />
+          <option value="pydantic-settings" />
+          <option value="sqlalchemy" />
+          <option value="asyncpg" />
+          <option value="alembic" />
+          <option value="psycopg2-binary" />
+          <option value="aiogram" />
+          <option value="httpx" />
+          <option value="qrcode" />
+          <option value="Pillow" />
+          <option value="pyzbar" />
+          <option value="opencv-python-headless" />
+          <option value="python-jose" />
+          <option value="passlib" />
+          <option value="python-multipart" />
+          <option value="python-dotenv" />
+          <option value="loguru" />
+          <option value="email-validator" />
+          <option value="pytest" />
+          <option value="pytest-asyncio" />
+          <option value="black" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
