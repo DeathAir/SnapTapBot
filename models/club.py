@@ -9,11 +9,11 @@ class Clubs(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    address: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    address: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str] = mapped_column(String(12), nullable=False, unique=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     subscription_start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    subscription_end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    subscription_end: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now, onupdate=func.now)
 
