@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional
-
 from sqlalchemy import BigInteger, String, Boolean, DateTime, func, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
@@ -27,3 +26,6 @@ class Ticket(Base):
     __table_args__ = (
         UniqueConstraint("number", "club_id", name="unique_ticket_per_club"),
     )
+
+    def __repr__(self):
+        return f"<Ticket(id={self.id}, number={self.number}, club_id={self.club_id}, is_registered={self.is_registered})>"

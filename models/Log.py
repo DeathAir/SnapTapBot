@@ -23,3 +23,7 @@ class Logs(Base):
     club = relationship("Club", back_populates="logs")
     user = relationship("User", back_populates="logs")
     ticket = relationship("Ticket", back_populates="logs")
+
+
+    def __repr__(self):
+        return f"<Logs(id={self.id},action={self.action}, ip_adress={self.ip_adress}, details={self.details}, created_at={self.created_at}, user_id={self.user_id}, club_id={self.club_id}, ticket_id={self.ticket_id})>"
