@@ -6,7 +6,8 @@ from database import Base
 
 from datetime import datetime
 
-from sqlalchemy import String, Text, ForeignKey, DateTime, func, TIMESTAMP, BigInteger
+from sqlalchemy import String, Text, ForeignKey, DateTime, func, TIMESTAMP, BigInteger, Boolean
+
 
 class UserRole(enum.Enum):
     user = 'user'
@@ -33,6 +34,7 @@ class User(Base):
         default=UserRole.user,
         server_default="user"
     )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     club_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

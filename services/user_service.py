@@ -1,0 +1,220 @@
+from datetime import datetime
+from typing import List
+
+from fastapi import HTTPException
+from pyexpat.errors import messages
+from sqlalchemy import select, func
+
+from database import AsyncSessionLocal
+from models import User
+from models.user import UserRole
+from schemas import UserCreate, UserUpdate
+
+
+class UserService:
+    def __init__(self, db: AsyncSessionLocal):
+        self.db = db
+
+    async def get_or_create_user(self,
+                                 user: UserCreate) -> User:
+        existing = await self.db.execute(select(User).where(User.telegram_id == user.telegram_id))
+        result = existing.scalar()
+        if result is None:
+            New_User = User(
+                telegram_id=user.telegram_id,
+                username=user.username,
+                phone=user.phone,
+                role=user.role,
+                club_id=user.club_id
+            )
+            new_user = New_User
+            self.db.add(new_user)
+            self.db.commit()
+            self.db.refresh(new_user)
+            return new_user
+        else:
+            return result
+
+    async def get_user_by_telegram_id(self, telegram_id: int) -> User:
+        existing = await self.db.execute(select(User).where(User.telegram_id == telegram_id))
+        result = existing.scalar()
+        if result is None:
+            raise HTTPException(status_code=404,
+                                detail="User not found"
+                                )
+        return result
+
+    async def get_user_by_id(self, user_id: int) -> User:
+        existing = await self.db.execute(select(User).where(User.id == user_id))
+        result = existing.scalar()
+        if result is None:
+            raise HTTPException(status_code=404,
+                                detail="User not found"
+            )
+        return result
+
+    async def get_user_by_username(self, username: str) -> User:
+        existing = await self.db.execute(select(User).where(User.username == username))
+        result = existing.scalar()
+        if result is None:
+            raise HTTPException(status_code=404,
+                                detail="User not found"
+            )
+        return result
+
+    async def get_user_by_club(self, club_id: int) -> User:
+        existing = await self.db.execute(select(User).where(User.club_id == club_id))
+        result = existing.scalar()
+        if result is None:
+            raise HTTPException(status_code=404,
+                                detail="Club not found")
+        return result
+
+    async def get_all_users(self) -> List[User]:
+        existing = await self.db.execute(select(User))
+        result = existing.scalars().all()
+        return result
+
+    async def get_user_club(self, club_id: int) -> User:
+        existing = await self.db.execute(select(User).where(User.club_id == club_id))
+        result = existing.scalar().all()
+        return result
+
+    async def create_user(self, user: UserCreate) -> User:
+        user = User(
+            telegram_id=user.telegram_id,
+            username=user.username,
+            phone=user.phone,
+            role=user.role,
+        )
+
+        new_user = user
+        await self.db.add(new_user)
+        await self.db.commit()
+        await self.db.refresh(new_user)
+        return new_user
+
+    async def update_user(self, user: UserUpdate) -> User:
+        existing  = self.db.execute(select(User).where(User.id == user.id))
+        result = existing.scalar_one_or_none()
+        if result is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        updated_user = User(**user.dict())
+        await self.db.add(updated_user)
+        await self.db.commit()
+        await self.db.refresh(updated_user)
+        return updated_user
+
+    async def update_user_activity(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.last_activity = datetime.now()
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def set_user_club(self, user_id: int, club_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user in None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.club_id = club_id
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def update_user_role(self, user_id: int, role: str):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if role not in ["user", "admin", "superadmin"]:
+            raise ValueError(f"Недопустимая роль: {role}")
+
+        user.role = role
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def get_user_role(self, user_id: int):
+        user_role = await self.db.execute(select(User.role).where(User.id == user_id))
+        result = user_role.scalars().one_or_none()
+        if result is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return result
+
+    async def make_admin(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.role = 'admin'
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def make_superadmin(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.role = 'superadmin'
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def remove_admin(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.role = 'user'
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def deactivate_user(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.is_active = False
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def is_user_active(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        if user.is_active:
+            return True
+        return False
+
+    async def get_active_users(self, user_id: int) -> List[User]:
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        existing = await self.db.execute(select(User.is_active).where(User.is_active == True))
+        result = existing.scalars().all()
+        return result
+
+    async def get_total_users_count(self) -> int:
+        existing = await self.db.execute(func.count()).select_from(User)
+        result = existing.scalars().one_or_none()
+        return result
+
+    async def get_total_clubs_count(self) -> int:
+        existing = await self.db_execute(func.count()).select_from(User.club_id)
+        result = existing.scalars().one_or_none()
+        return result
+
+    async def delete_user(self, user_id: int):
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        await self.db.delete(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return {"message": "User deleted"}
+
+
+
+
+

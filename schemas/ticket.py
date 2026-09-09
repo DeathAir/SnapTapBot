@@ -8,6 +8,7 @@ class TicketBase(BaseModel):
     number: int
     secret_hash: str
     club_id: int
+    user_id: int
 
 class TicketCreate(TicketBase):
     pass
@@ -18,11 +19,9 @@ class TicketResponse(TicketBase):
     created_at: datetime
     updated_at:datetime
     registered_at: datetime
-    user_id: int
 
-class TicketVerify(BaseModel):
-    ticket_number: int = Field(..., alias="ticketNumber", description="Ticket number from QR code")
-    secret_hash: str = Field(..., alias="secretHash", description="Secret Hash from QR code")
+
+class TicketVerify(TicketBase):
     telegram_id: int = Field(..., alias="telegramId", description="Telegram Id Users")
 
 class TicketVerifyResponse(BaseModel):

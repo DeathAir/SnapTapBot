@@ -19,5 +19,5 @@ class UserResponse(UserCreate):
 
     config = ConfigDict(from_attributes=True)
 
-class UserUpdate(UserBase):
+class UserUpdate(UserCreate):
     pass
