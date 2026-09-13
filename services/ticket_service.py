@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from database import AsyncSessionLocal
-from models import Ticket
+from models import Ticket, User
 from schemas import TicketVerify
 from services.user_service import UserService
 
@@ -140,6 +140,46 @@ class TicketService:
         await self.db.refresh(ticket)
         return ticket
 
+    async def get_tickets_stats(self, club_id: int) -> dict:
+        total_result = await self.db.execute(
+            select(func.count()).where(Ticket.club_id == club_id)
+        )
+        total = total_result.scalar() or 0
+
+        registered_result = await self.db.execute(
+            select(func.count()).where(
+                Ticket.club_id == club_id,
+                Ticket.is_registered == True
+            )
+        )
+        registered = registered_result.scalar() or 0
+
+        free = total - registered
+        progress = (registered / total * 100) if total > 0 else 0
+
+        return {
+            "total": total,
+            "registered": registered,
+            "free": free,
+            "progress_percent": round(progress, 2)
+        }
+
+    async def get_club_stats(self, club_id: int) -> dict:
+        tickets_stats = await self.get_tickets_stats(club_id)
+
+        users_result = await self.db.execute(
+            select(func.count()).where(User.club_id == club_id)
+        )
+        users_count = users_result.scalar() or 0
+
+        return {
+            "tickets": tickets_stats,
+            "users_count": users_count
+        }
+
+    async def get_registration_progress(self, club_id: int) -> float:
+        stats = await self.get_tickets_stats(club_id)
+        return stats["progress_percent"]
 
 
 

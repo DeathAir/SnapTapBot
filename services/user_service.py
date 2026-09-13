@@ -2,12 +2,10 @@ from datetime import datetime
 from typing import List
 
 from fastapi import HTTPException
-from pyexpat.errors import messages
 from sqlalchemy import select, func
 
 from database import AsyncSessionLocal
 from models import User
-from models.user import UserRole
 from schemas import UserCreate, UserUpdate
 
 
@@ -28,9 +26,9 @@ class UserService:
                 club_id=user.club_id
             )
             new_user = New_User
-            self.db.add(new_user)
-            self.db.commit()
-            self.db.refresh(new_user)
+            await self.db.add(new_user)
+            await self.db.commit()
+            await self.db.refresh(new_user)
             return new_user
         else:
             return result
@@ -63,12 +61,10 @@ class UserService:
         return result
 
     async def get_user_by_club(self, club_id: int) -> User:
-        existing = await self.db.execute(select(User).where(User.club_id == club_id))
-        result = existing.scalar()
-        if result is None:
-            raise HTTPException(status_code=404,
-                                detail="Club not found")
-        return result
+        existing = await self.db.execute(
+            select(User).where(User.club_id == club_id)
+        )
+        return existing.scalars().all()
 
     async def get_all_users(self) -> List[User]:
         existing = await self.db.execute(select(User))
@@ -80,30 +76,27 @@ class UserService:
         result = existing.scalar().all()
         return result
 
-    async def create_user(self, user: UserCreate) -> User:
-        user = User(
-            telegram_id=user.telegram_id,
-            username=user.username,
-            phone=user.phone,
-            role=user.role,
+    async def create_user(self, user_data: UserCreate) -> User:
+        new_user = User(
+            telegram_id=user_data.telegram_id,
+            username=user_data.username,
+            phone=user_data.phone,
+            role=user_data.role,
         )
-
-        new_user = user
         await self.db.add(new_user)
         await self.db.commit()
         await self.db.refresh(new_user)
         return new_user
 
-    async def update_user(self, user: UserUpdate) -> User:
-        existing  = self.db.execute(select(User).where(User.id == user.id))
-        result = existing.scalar_one_or_none()
-        if result is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        updated_user = User(**user.dict())
-        await self.db.add(updated_user)
+    async def update_user(self, user_id: int, user_data: UserUpdate) -> User:
+        user = await self.get_user_by_id(user_id)
+        if user_data.username is not None:
+            user.username = user_data.username
+        if user_data.phone is not None:
+            user.phone = user_data.phone
         await self.db.commit()
-        await self.db.refresh(updated_user)
-        return updated_user
+        await self.db.refresh(user)
+        return user
 
     async def update_user_activity(self, user_id: int):
         user = await self.get_user_by_id(user_id)
@@ -116,7 +109,7 @@ class UserService:
 
     async def set_user_club(self, user_id: int, club_id: int):
         user = await self.get_user_by_id(user_id)
-        if user in None:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
         user.club_id = club_id
         await self.db.commit()
@@ -188,20 +181,22 @@ class UserService:
         return False
 
     async def get_active_users(self, user_id: int) -> List[User]:
-        user = await self.get_user_by_id(user_id)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        existing = await self.db.execute(select(User.is_active).where(User.is_active == True))
-        result = existing.scalars().all()
-        return result
+        result = await self.db.execute(
+            select(User).where(User.is_active == True)
+        )
+        return result.scalars().all()
 
     async def get_total_users_count(self) -> int:
-        existing = await self.db.execute(func.count()).select_from(User)
+        existing = await self.db.execute(
+        select(func.count()).select_from(User)
+    )
         result = existing.scalars().one_or_none()
         return result
 
     async def get_total_clubs_count(self) -> int:
-        existing = await self.db_execute(func.count()).select_from(User.club_id)
+        existing = await self.db.execute(
+        select(func.count(func.distinct(User.club_id)))
+    )
         result = existing.scalars().one_or_none()
         return result
 
@@ -211,7 +206,6 @@ class UserService:
             raise HTTPException(status_code=404, detail="User not found")
         await self.db.delete(user)
         await self.db.commit()
-        await self.db.refresh(user)
         return {"message": "User deleted"}
 
 

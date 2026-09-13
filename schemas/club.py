@@ -1,27 +1,36 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
+from typing import Optional
+
 
 class ClubBase(BaseModel):
+    """Базовая схема клуба"""
     name: str = Field(..., description="Название клуба")
-    address: str = Field(..., max_length=100, description="Адресс клуба")
-    phone: str = Field(..., min_length=12, max_length=12, description="Номер телефона клуба")
+    address: str = Field(..., max_length=100, description="Адрес клуба")
+    phone: str = Field(..., min_length=10, max_length=20, description="Телефон")
+    is_active: bool = Field(default=True, description="Активен ли клуб")
+
 
 class ClubCreate(ClubBase):
+    """Схема для создания клуба"""
     pass
+
 
 class ClubResponse(ClubBase):
-    id: int = Field(...)
-    is_active: bool = Field(...)
-    subscription_start: datetime = Field(...)
-    subscription_end: datetime = Field(...)
-    created_at: datetime = Field(...)
-    updated_at: datetime = Field(...)
+    """Схема для ответа с данными клуба"""
+    id: int
+    subscription_start: datetime
+    subscription_end: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
 
-    config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 
-class ClubUpdate(ClubCreate):
-    pass
-
-class ClubDelete(ClubResponse):
-    pass
+class ClubUpdate(BaseModel):
+    """Схема для обновления клуба (все поля опциональны)"""
+    name: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    is_active: Optional[bool] = None
+    subscription_end: Optional[datetime] = None
