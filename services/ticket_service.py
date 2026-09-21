@@ -1,8 +1,11 @@
+import hashlib
+import secrets
 from datetime import datetime
 from typing import List, Optional
 
 from fastapi import HTTPException
 from sqlalchemy import select, func
+
 
 from database import AsyncSessionLocal
 from models import Ticket, User
@@ -139,6 +142,33 @@ class TicketService:
         await self.db.commit()
         await self.db.refresh(ticket)
         return ticket
+
+    def generate_ticket_hash(self, ticket_id: int):
+        salt = secrets.token_hex(16)
+        data  = f"{ticket_id}{salt}"
+        return hashlib.sha256(data.encode()).hexdigest()
+
+    async def generate_tickets(self, club_id: int, count: int) -> List[Ticket]:
+        tickets = []
+
+        for i in range(1, count + 1):
+            secret_hash = self.generate_ticket_hash(i)
+            ticket = Ticket(
+                number=i,
+                club_id=club_id,
+                secret_hash=secret_hash,
+                is_registered=False
+            )
+            tickets.append(ticket)
+
+        self.db.add_all(tickets)
+        await self.db.commit()
+
+        for ticket in tickets:
+            await self.db.refresh(ticket)
+
+        return tickets
+
 
     async def get_tickets_stats(self, club_id: int) -> dict:
         total_result = await self.db.execute(
