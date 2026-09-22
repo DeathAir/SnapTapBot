@@ -32,4 +32,5 @@ class AdminTicketList(BaseModel):
     filter: Optional[str] = Field(None, description="all / free / used")
 
 class AdminGenerateRequest(BaseModel):
+    club_id: int
     count: int = Field(..., ge=1, le=10000, description="quantity tickets")
