@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, String, Boolean, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from database import Base
 
@@ -16,6 +16,8 @@ class Clubs(Base):
     subscription_end: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now, onupdate=func.now)
+
+    raffles = relationship("Raffle", back_populates="club")
 
     def __repr__(self):
         return f"<Clubs(id={self.id}, name={self.name}, is_active={self.is_active}, subscription_start={self.subscription_start}, subscription_end={self.subscription_end})>"
