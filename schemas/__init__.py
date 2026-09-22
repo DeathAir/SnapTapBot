@@ -10,6 +10,7 @@ from .admin import AdminStats, AdminClubStats, AdminUserList, AdminTicketList, A
 from .superadmin import SuperAdminStats, SuperAdminClubList, SuperAdminClubDetail
 from .response import StandardResponse, ErrorResponse, PaginatedResponse
 from .report import ReportFilter, ReportRow
+from .raffle import  RaffleBase, RaffleCreate, RaffleResponse, RaffleUpdate, RaffleListResponse
 
 __all__ = [
     # User
@@ -30,5 +31,6 @@ __all__ = [
     # Response
     "StandardResponse", "ErrorResponse", "PaginatedResponse",
     # Report
-    "ReportFilter", "ReportRow",
+    "ReportFilter", "ReportRow", "RaffleBase", "RaffleCreate", "RaffleResponse",
+    "RaffleUpdate", "RaffleListResponse",
 ]
