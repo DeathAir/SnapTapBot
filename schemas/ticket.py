@@ -30,7 +30,7 @@ class TicketVerifyResponse(BaseModel):
     ticket_number: int = Field(..., alias="ticketNumber", description="Ticket number")
     club_name: str = Field(..., alias="clubName", description="Club name")
 
-    config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 class TicketStatusResponse(BaseModel):
     """Ответ при проверке статуса билета"""

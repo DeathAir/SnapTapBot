@@ -26,7 +26,7 @@ class UserService:
                 club_id=user.club_id
             )
             new_user = New_User
-            await self.db.add(new_user)
+            self.db.add(new_user)
             await self.db.commit()
             await self.db.refresh(new_user)
             return new_user
@@ -83,7 +83,7 @@ class UserService:
             phone=user_data.phone,
             role=user_data.role,
         )
-        await self.db.add(new_user)
+        self.db.add(new_user)
         await self.db.commit()
         await self.db.refresh(new_user)
         return new_user
@@ -204,7 +204,7 @@ class UserService:
         user = await self.get_user_by_id(user_id)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
-        await self.db.delete(user)
+        self.db.delete(user)
         await self.db.commit()
         return {"message": "User deleted"}
 

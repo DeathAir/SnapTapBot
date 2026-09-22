@@ -28,7 +28,7 @@ class LogService:
             ip_address=ip_address,
             details=details
         )
-        await self.db.add(new_log)
+        self.db.add(new_log)
         await self.db.commit()
         await self.db.refresh(new_log)
         return new_log

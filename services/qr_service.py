@@ -1,35 +1,39 @@
-import os
 import zipfile
 from io import BytesIO
 from typing import List, Optional
 from urllib.parse import urlparse, parse_qs
+from pathlib import Path
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from database import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+
 import qrcode
 from PIL import Image
 from pyzbar.pyzbar import decode
+
 from config import settings
 from models import Ticket
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+QR_FOLDER = BASE_DIR / "qr_codes"
+
 
 class QRService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-
-
-    async def generate_qr_code(self, ticket_number: int,
-                               secret_hash: str,
-                               club_id: int) -> str:
-        qr_data = f"{settings.base_url}/verify?ticket={Ticket.number}&hash={hash}&club={club_id}"
-
+    async def generate_qr_code(self, ticket_number: int, secret_hash: str, club_id: int) -> str:
+        qr_data = f"{settings.base_url}/verify?ticket={ticket_number}&hash={secret_hash}&club={club_id}"
         qr = qrcode.make(qr_data)
 
-        file_path = f"qr_codes/ticket_{club_id}_{ticket_number}.png"
-        qr.save(file_path)
+        QR_FOLDER.mkdir(exist_ok=True)
+        file_path = QR_FOLDER / f"ticket_{club_id}_{ticket_number}.png"
 
-        return file_path
+        qr.save(str(file_path))
+
+
+        return str(file_path)
 
     async def generate_qr_codes_batch(self, tickets) -> List[str]:
         file_paths = []
@@ -102,35 +106,35 @@ class QRService:
 
             if not all([ticket_number, secret_hash, club_id]):
                 raise ValueError("Missing data")
-            return {"ticket_number": ticket_number,
-                    "secret_hash": secret_hash,
-                    "club_id": club_id}
+            return {
+                "ticket_number": ticket_number,
+                "secret_hash": secret_hash,
+                "club_id": club_id
+            }
         except Exception:
             raise HTTPException(400, "Invalid QR data")
 
     async def get_qr_file_path(self, ticket_number: int, club_id: int) -> str:
-        return f"qr_codes/ticket_{club_id}_{ticket_number}.png"
+        return str(QR_FOLDER / f"ticket_{club_id}_{ticket_number}.png")
 
     async def delete_qr_file(self, ticket_number: int, club_id: int) -> bool:
-        path = await self.get_qr_file_path(ticket_number, club_id)
-        if os.path.exists(path):
-            os.remove(path)
+        path = QR_FOLDER / f"ticket_{club_id}_{ticket_number}.png"
+        if path.exists():
+            path.unlink()
             return True
         return False
 
     async def delete_all_qr_files(self) -> dict:
-        folder = "qr_codes"
-        if not os.path.exists(folder):
+        if not QR_FOLDER.exists():
             return {"deleted": 0}
         count = 0
-        for file in os.listdir(folder):
-            if file.endswith(".png"):
-                os.remove(os.path.join(folder, file))
+        for file in QR_FOLDER.iterdir():
+            if file.suffix == ".png":
+                file.unlink()
                 count += 1
         return {"deleted": count}
 
     async def get_qr_files_list(self) -> List[str]:
-        folder = "qr_codes"
-        if not os.path.exists(folder):
+        if not QR_FOLDER.exists():
             return []
-        return [f for f in os.listdir(folder) if f.endswith(".png")]
+        return [f.name for f in QR_FOLDER.iterdir() if f.suffix == ".png"]

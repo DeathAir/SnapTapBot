@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from schemas import TicketResponse
-from schemas.user import UserResponce
+from schemas.user import UserResponse
 
 
 class AdminStats(BaseModel):
@@ -17,7 +17,7 @@ class AdminClubStats(AdminStats):
     total_ticket: int
 
 class AdminUserList(BaseModel):
-    users: List[UserResponce]
+    users: List[UserResponse]
     total: int
     page: int = Field(default=1)
     per_page: int = Field(default=20)

@@ -52,7 +52,7 @@ class RaffleService():
             is_active=True
         )
 
-        await self.db.add(raffle)
+        self.db.add(raffle)
         await self.db.commit()
         await self.db.refresh(raffle)
         return raffle
@@ -84,7 +84,7 @@ class RaffleService():
         raffle = existing.scalar_one_or_none()
         if not raffle:
             raise HTTPException(status_code=404, detail="Raffle not found")
-        await self.db.delete(raffle)
+        self.db.delete(raffle)
         await self.db.commit()
         return {
             "message": "Raffle deleted"

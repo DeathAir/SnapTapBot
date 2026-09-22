@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, func
 
 from database import AsyncSessionLocal
-from models import Ticket, User, Clubs
+from models import Ticket, User, Club
 
 
 class ReportService:
@@ -71,7 +71,7 @@ class ReportService:
 
     async def generate_club_report(self, club_id: int) -> dict:
         club_result = await self.db.execute(
-            select(Clubs).where(Clubs.id == club_id)
+            select(Club).where(Club.id == club_id)
         )
         club = club_result.scalar_one_or_none()
         if not club:

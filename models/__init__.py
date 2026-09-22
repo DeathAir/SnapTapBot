@@ -1,7 +1,7 @@
 from .user import User
 from .ticket import Ticket
-from .club import Clubs
-from .Log import Logs
+from .club import Club
+from .log import Logs
 from .raffle import Raffle
 
-__all__ = ["User", "Ticket", "Clubs", "Logs", "Raffle"]
+__all__ = ["User", "Ticket", "Club", "Logs", "Raffle"]

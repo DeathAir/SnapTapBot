@@ -3,11 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, result
 
 from schemas import TicketVerify, StandardResponse, TicketListResponse
 from api.dependencies import get_db
-from services import ticket_service
 from services.ticket_service import TicketService
 from services.user_service import UserService
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
+
 @router.post("/verify", response_model=StandardResponse)
 async def verify(data: TicketVerify, db: AsyncSession  = Depends(get_db)):
     user_service = UserService(db)

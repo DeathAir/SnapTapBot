@@ -1,5 +1,5 @@
 from .user import UserBase, UserResponse, UserCreate, UserUpdate
-from .club import ClubBase, ClubUpdate, ClubResponse, ClubCreate, ClubDelete
+from .club import ClubBase, ClubUpdate, ClubResponse, ClubCreate
 from .ticket import (
     TicketBase, TicketCreate, TicketResponse,
     TicketVerify, TicketVerifyResponse, TicketStatusResponse,

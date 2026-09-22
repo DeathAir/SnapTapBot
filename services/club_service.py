@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, func
 
 from database import AsyncSessionLocal
-from models import Clubs, User, Ticket
+from models import Club, User, Ticket
 from schemas import ClubResponse, ClubCreate, ClubUpdate
 
 
@@ -14,49 +14,49 @@ class ClubService:
         self.db = db
 
 
-    async def get_club_by_id(self, club_id: int) -> Clubs:
-        existing_club = await self.db.execute(select(Clubs).where(Clubs.id == club_id))
+    async def get_club_by_id(self, club_id: int) -> Club:
+        existing_club = await self.db.execute(select(Club).where(Club.id == club_id))
         result = existing_club.scalar_one_or_none()
         if result is None:
             raise HTTPException(status_code=404, detail="Club not found")
         return result
 
     async def get_club_by_name(self, name: str) -> ClubResponse:
-        existing_club = await self.db.execute(select(Clubs).where(Clubs.name == name))
+        existing_club = await self.db.execute(select(Club).where(Club.name == name))
         result = existing_club.scalar_one_or_none()
         if result is None:
             raise HTTPException(status_code=404, detail="Club not found")
         return result
 
-    async def get_all_clubs(self) -> List[Clubs]:
-        exiting_club = await self.db.execute(select(Clubs).order_by(Clubs.name.desc()))
+    async def get_all_clubs(self) -> List[Club]:
+        exiting_club = await self.db.execute(select(Club).order_by(Club.name.desc()))
         result = exiting_club.scalars().all()
         return result
 
-    async def get_active_clubs(self) -> List[Clubs]:
-        existing_ative_club = await self.db.execute(select(Clubs).where(Clubs.is_active == True))
+    async def get_active_clubs(self) -> List[Club]:
+        existing_ative_club = await self.db.execute(select(Club).where(Club.is_active == True))
         result = existing_ative_club.scalars().all()
         return result
 
-    async def create_club(self, club_data: ClubCreate) -> Clubs:
+    async def create_club(self, club_data: ClubCreate) -> Club:
         result = await self.db.execute(
-            select(Clubs).where(Clubs.name == club_data.name)
+            select(Club).where(Club.name == club_data.name)
         )
         existing = result.scalar_one_or_none()
         if existing:
             raise HTTPException(status_code=409, detail="Club already exists")
 
-        new_club = Clubs(
+        new_club = Club(
             name=club_data.name,
             address=club_data.address,
             phone=club_data.phone,
         )
-        await self.db.add(new_club)
+        self.db.add(new_club)
         await self.db.commit()
         await self.db.refresh(new_club)
         return new_club
 
-    async def update_club(self, club_id: int, club_data: ClubUpdate) -> Clubs:
+    async def update_club(self, club_id: int, club_data: ClubUpdate) -> Club:
         existing_club = await self.get_club_by_id(club_id)
 
         if club_data.name is not None:
@@ -74,7 +74,7 @@ class ClubService:
         await self.db.refresh(existing_club)
         return existing_club
 
-    async def activate_club(self, club_id: int) -> Clubs:
+    async def activate_club(self, club_id: int) -> Club:
         existing_club = await self.get_club_by_id(club_id)
 
         existing_club.is_active = True
@@ -84,7 +84,7 @@ class ClubService:
 
         return existing_club
 
-    async def deactivate_club(self, club_id: int) -> Clubs:
+    async def deactivate_club(self, club_id: int) -> Club:
         existing_club = await self.get_club_by_id(club_id)
 
         existing_club.is_active = False
@@ -100,7 +100,7 @@ class ClubService:
             return False
         return existing_club.subscription_end > datetime.now()
 
-    async def renew_subscription(self, club_id: int, days: int = 30) -> Clubs:
+    async def renew_subscription(self, club_id: int, days: int = 30) -> Club:
         """Продлить подписку на N дней"""
         club = await self.get_club_by_id(club_id)
         from datetime import timedelta
@@ -136,7 +136,7 @@ class ClubService:
         club = await self.get_club_by_id(club_id)
         if club is None:
             raise HTTPException(status_code=404, detail="Club not found")
-        await self.db.delete(club)
+        self.db.delete(club)
         await self.db.commit()
         return {"message": "Club deleted"}
 
