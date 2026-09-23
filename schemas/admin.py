@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-
 from schemas import TicketResponse
 from schemas.user import UserResponse
 
@@ -33,4 +32,5 @@ class AdminTicketList(BaseModel):
 
 class AdminGenerateRequest(BaseModel):
     club_id: int
+    raffle_id: int
     count: int = Field(..., ge=1, le=10000, description="quantity tickets")

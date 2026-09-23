@@ -36,3 +36,4 @@ class Raffle(Base):
 
     club = relationship("Club", back_populates="raffles")
     creator = relationship("User", back_populates="raffles")
+    tickets = relationship("Ticket", back_populates="raffle")

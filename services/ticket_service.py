@@ -6,7 +6,6 @@ from typing import List, Optional
 from fastapi import HTTPException
 from sqlalchemy import select, func
 
-
 from database import AsyncSessionLocal
 from models import Ticket, User
 from schemas import TicketVerify
@@ -19,44 +18,63 @@ class TicketService:
         self.user_service = user_service
 
     async def get_ticket_by_number(self, number: int, club_id: int) -> Optional[Ticket]:
-        existing = await self.db.execute(select(Ticket).where(Ticket.number == number,
-                                                              Ticket.club_id == club_id))
+        existing = await self.db.execute(
+            select(Ticket).where(
+                Ticket.number == number,
+                Ticket.club_id == club_id
+            )
+        )
         result = existing.scalar_one_or_none()
         if result is None:
             raise HTTPException(status_code=404, detail="Ticket not found")
         return result
 
     async def get_ticket_by_id(self, ticket_id: int) -> Ticket:
-        existing = await self.db.execute(select(Ticket).where(Ticket.id == ticket_id))
+        existing = await self.db.execute(
+            select(Ticket).where(Ticket.id == ticket_id)
+        )
         result = existing.scalar_one_or_none()
         if result is None:
             raise HTTPException(status_code=404, detail="Ticket not found")
         return result
 
     async def get_tickets_by_club(self, club_id: int) -> List[Ticket]:
-        existing = await self.db.execute(select(Ticket).where(Ticket.club_id == club_id))
-        result = existing.scalars().all()
-        return result
+        existing = await self.db.execute(
+            select(Ticket).where(Ticket.club_id == club_id)
+        )
+        return existing.scalars().all()
 
     async def get_tickets_by_user(self, user_id: int) -> List[Ticket]:
-        existing = await self.db.execute(select(Ticket).where(Ticket.user_id == user_id))
-        result = existing.scalars().all()
-        return result
+        existing = await self.db.execute(
+            select(Ticket).where(Ticket.user_id == user_id)
+        )
+        return existing.scalars().all()
 
     async def get_registered_tickets(self, club_id: int) -> List[Ticket]:
-        existing = await self.db.execute(select(Ticket).where(Ticket.is_registered == True,
-                                                              Ticket.club_id == club_id))
-        result = existing.scalars().all()
-        return result
+        existing = await self.db.execute(
+            select(Ticket).where(
+                Ticket.is_registered == True,
+                Ticket.club_id == club_id
+            )
+        )
+        return existing.scalars().all()
 
     async def get_free_tickets(self, club_id: int) -> List[Ticket]:
-        existing = await self.db.execute(select(Ticket).where(Ticket.is_registered == False,
-                                                              Ticket.club_id == club_id))
-        result = existing.scalars().all()
-        return result
+        existing = await self.db.execute(
+            select(Ticket).where(
+                Ticket.is_registered == False,
+                Ticket.club_id == club_id
+            )
+        )
+        return existing.scalars().all()
 
     async def get_ticket_status(self, number: int, club_id: int) -> dict:
-        existing = await self.db.execute(select(Ticket).where(Ticket.number == number, Ticket.club_id == club_id))
+        existing = await self.db.execute(
+            select(Ticket).where(
+                Ticket.number == number,
+                Ticket.club_id == club_id
+            )
+        )
         result = existing.scalar_one_or_none()
         if result is None:
             raise HTTPException(status_code=404, detail="Ticket not found")
@@ -74,49 +92,62 @@ class TicketService:
                 "success": False,
                 "message": "Вы не привязаны к клубу. Отсканируйте QR-код в клубе.",
             }
-        tickets = await self.get_ticket_by_number(ticket_data.number, user.club_id)
-        if tickets is None:
+
+        ticket = await self.get_ticket_by_number(ticket_data.number, user.club_id)
+        if ticket is None:
             return {
                 "success": False,
                 "message": f"Билет №{ticket_data.number} не найден"
             }
-        if ticket_data.secret_hash != tickets.secret_hash:
+        if not ticket.is_active:
+            return {
+                "success": False,
+                "message": f"Билет №{ticket_data.number} деактивирован"
+            }
+        if ticket_data.secret_hash != ticket.secret_hash:
             return {
                 "success": False,
                 "message": "Неверный хеш. Билет поддельный!"
             }
-        if tickets.is_registered:
+        if ticket.is_registered:
             return {
                 "success": False,
                 "message": f"Билет №{ticket_data.number} уже зарегистрирован"
             }
-        tickets.is_registered = True
-        tickets.user_id = user.id
-        tickets.registered_at = datetime.now()
+
+        ticket.is_registered = True
+        ticket.user_id = user.id
+        ticket.registered_at = datetime.now()
 
         await self.db.commit()
-        await self.db.refresh(tickets)
+        await self.db.refresh(ticket)
 
         return {
             "success": True,
-            "message": f"✅ Билет №{tickets.number} успешно зарегистрирован!"
+            "message": f"✅ Билет №{ticket.number} успешно зарегистрирован!"
         }
 
     async def check_ticket_exists(self, number: int, club_id: int) -> bool:
-        result = await self.db.execute(select(Ticket).where(Ticket.number == number,
-                                                                     Ticket.club_id == club_id))
+        result = await self.db.execute(
+            select(Ticket).where(
+                Ticket.number == number,
+                Ticket.club_id == club_id
+            )
+        )
         return result.scalar_one_or_none() is not None
 
-    async def check_ticket_available(self, number, club_id) -> bool:
-        result = await self.db.execute(select(Ticket).where(Ticket.number == number,
-                                                            Ticket.club_id == club_id,
-                                                            Ticket.is_registered == False))
+    async def check_ticket_available(self, number: int, club_id: int) -> bool:
+        result = await self.db.execute(
+            select(Ticket).where(
+                Ticket.number == number,
+                Ticket.club_id == club_id,
+                Ticket.is_registered == False
+            )
+        )
         return result.scalar_one_or_none() is not None
 
     async def register_ticket(self, ticket_id: int, user_id: int) -> Optional[Ticket]:
         ticket = await self.get_ticket_by_id(ticket_id)
-        if not ticket:
-            raise HTTPException(status_code=404, detail="Билет не найден")
         if ticket.is_registered:
             raise HTTPException(status_code=409, detail="Билет уже зарегистрирован")
         ticket.is_registered = True
@@ -126,14 +157,10 @@ class TicketService:
         await self.db.refresh(ticket)
         return ticket
 
-    async def unregister_ticket(self, ticket_id):
+    async def unregister_ticket(self, ticket_id: int) -> Ticket:
         ticket = await self.get_ticket_by_id(ticket_id)
-        if not ticket:
-            raise HTTPException(status_code=404, detail="Билет не найден")
         if not ticket.is_registered:
             raise HTTPException(status_code=409, detail="Билет уже свободен")
-
-        ticket_number = ticket.number
 
         ticket.is_registered = False
         ticket.user_id = None
@@ -143,12 +170,12 @@ class TicketService:
         await self.db.refresh(ticket)
         return ticket
 
-    def generate_ticket_hash(self, ticket_id: int):
+    def generate_ticket_hash(self, ticket_number: int) -> str:
         salt = secrets.token_hex(16)
-        data  = f"{ticket_id}{salt}"
+        data = f"{ticket_number}{salt}"
         return hashlib.sha256(data.encode()).hexdigest()
 
-    async def generate_tickets(self, club_id: int, count: int) -> List[Ticket]:
+    async def generate_tickets(self, club_id: int, raffle_id: int, count: int) -> List[Ticket]:
         tickets = []
 
         for i in range(1, count + 1):
@@ -156,8 +183,10 @@ class TicketService:
             ticket = Ticket(
                 number=i,
                 club_id=club_id,
+                raffle_id=raffle_id,
                 secret_hash=secret_hash,
-                is_registered=False
+                is_registered=False,
+                is_active=True
             )
             tickets.append(ticket)
 
@@ -169,6 +198,37 @@ class TicketService:
 
         return tickets
 
+    async def deactivate_club_tickets(self, club_id: int) -> dict:
+        result = await self.db.execute(
+            select(Ticket).where(Ticket.club_id == club_id)
+        )
+        tickets = result.scalars().all()
+        if not tickets:
+            raise HTTPException(status_code=404, detail="No tickets found")
+
+        count = 0
+        for ticket in tickets:
+            if ticket.is_active:
+                ticket.is_active = False
+                count += 1
+
+        await self.db.commit()
+        return {"message": f"Деактивировано {count} билетов"}
+
+    async def delete_club_tickets(self, club_id: int) -> dict:
+        result = await self.db.execute(
+            select(Ticket).where(Ticket.club_id == club_id)
+        )
+        tickets = result.scalars().all()
+        if not tickets:
+            raise HTTPException(status_code=404, detail="No tickets found")
+
+        count = len(tickets)
+        for ticket in tickets:
+            await self.db.delete(ticket)
+
+        await self.db.commit()
+        return {"message": f"Удалено {count} билетов"}
 
     async def get_tickets_stats(self, club_id: int) -> dict:
         total_result = await self.db.execute(
@@ -210,8 +270,3 @@ class TicketService:
     async def get_registration_progress(self, club_id: int) -> float:
         stats = await self.get_tickets_stats(club_id)
         return stats["progress_percent"]
-
-
-
-
-
