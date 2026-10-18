@@ -17,12 +17,12 @@ class TicketResponse(TicketBase):
     id: int
     is_registered: bool
     created_at: datetime
-    updated_at:datetime
+    updated_at: datetime
     registered_at: datetime
 
 
 class TicketVerify(TicketBase):
-    telegram_id: int = Field(..., alias="telegramId", description="Telegram Id Users")
+    telegram_id: int = Field(..., validation_alias="telegramId", description="Telegram Id Users")
 
 class TicketVerifyResponse(BaseModel):
     status: str = Field(..., alias="status", description="success / error")
@@ -33,7 +33,6 @@ class TicketVerifyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class TicketStatusResponse(BaseModel):
-    """Ответ при проверке статуса билета"""
     ticket_number: int
     is_registered: bool
     registered_by: Optional[str] = Field(None, description="Кто зарегистрировал")

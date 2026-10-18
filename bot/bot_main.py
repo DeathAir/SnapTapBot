@@ -1,10 +1,18 @@
 import asyncio
+import logging                                    # ← новое
+
 from aiogram import Bot
+from aiogram.client.session.aiohttp import AiohttpSession
+
 from bot.dispatcher import setup_dispatcher
 from config import settings
 
 
+logging.basicConfig(level=logging.INFO)           # ← новое
+
+
 async def main() -> None:
+
     bot = Bot(token=settings.bot_token)
     dp, api_client = setup_dispatcher()
     try:
@@ -12,6 +20,7 @@ async def main() -> None:
     finally:
         await api_client.close()
         await bot.session.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -24,10 +24,7 @@ class TicketService:
                 Ticket.club_id == club_id
             )
         )
-        result = existing.scalar_one_or_none()
-        if result is None:
-            raise HTTPException(status_code=404, detail="Ticket not found")
-        return result
+        return existing.scalar_one_or_none()
 
     async def get_ticket_by_id(self, ticket_id: int) -> Ticket:
         existing = await self.db.execute(
@@ -94,11 +91,14 @@ class TicketService:
             }
 
         ticket = await self.get_ticket_by_number(ticket_data.number, user.club_id)
+
+        # ТЕПЕРЬ ЭТА ПРОВЕРКА СРАБОТАЕТ И ВЕРНЕТ КРАСИВОЕ СООБЩЕНИЕ
         if ticket is None:
             return {
                 "success": False,
                 "message": f"Билет №{ticket_data.number} не найден"
             }
+
         if not ticket.is_active:
             return {
                 "success": False,

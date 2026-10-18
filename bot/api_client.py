@@ -225,3 +225,11 @@ class ApiClient:
         return await self._get(
             "/superadmin/stats",
         )
+
+    async def get_tickets_zip(self, club_id: int) -> bytes:
+        response = await self.client.get(
+            "/admin/tickets/zip",
+            params={"club_id": club_id}
+        )
+        response.raise_for_status()
+        return response.content

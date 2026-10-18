@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi.responses import Response
 from api.dependencies import get_db
 from schemas import AdminStats, AdminGenerateRequest, RaffleCreate, RaffleResponse
 from services.qr_service import QRService
@@ -16,10 +16,12 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def admin_stats(club_id: int, db: AsyncSession = Depends(get_db)):
     ticket_service = TicketService(db, UserService(db))
     stats = await ticket_service.get_tickets_stats(club_id)
+
+    # Обрати внимание на названия аргументов — они должны совпадать со схемой!
     return AdminStats(
-        total_tickets=stats["total"],
-        registered_tickets=stats["registered"],
-        free_tickets=stats["free"],
+        total_ticket=stats["total"],
+        remaining_ticket=stats["registered"],  # Или stats["remaining"], смотри что там в словаре
+        free_ticket=stats["free"],
         progress_percent=stats["progress_percent"]
     )
 
@@ -69,10 +71,13 @@ async def raffles_club(club_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/raffles", response_model=RaffleResponse)
 async def create_raffles(data: RaffleCreate, user_id: int, db: AsyncSession = Depends(get_db)):
-    raffle_service = RaffleService(db)
-    raffle = await raffle_service.create_raffle(data, user_id)
-    return raffle
+    user_service = UserService(db)
+    user = await user_service.get_user_by_telegram_id(user_id)
 
+    raffle_service = RaffleService(db)
+    raffle = await raffle_service.create_raffle(data, user.id)
+
+    return raffle
 
 @router.post("/raffles/{raffle_id}/activate", response_model=RaffleResponse)
 async def raffle_activate(raffle_id: int, db: AsyncSession = Depends(get_db)):
@@ -114,3 +119,13 @@ async def delete_tickets_club(club_id: int, db: AsyncSession = Depends(get_db)):
     ticket_service = TicketService(db, UserService(db))
     result = await ticket_service.delete_club_tickets(club_id)
     return result
+
+@router.get("/tickets/zip")
+async def get_tickets_zip(club_id: int, db: AsyncSession = Depends(get_db)):
+    qr_service = QRService(db)
+    zip_bytes = await qr_service.generate_qr_zip(club_id)
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=tickets_{club_id}.zip"}
+    )
