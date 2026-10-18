@@ -29,7 +29,7 @@ async def admin_stats(club_id: int, db: AsyncSession = Depends(get_db)):
 @router.get("/users")
 async def admin_users(club_id: int, db: AsyncSession = Depends(get_db)):
     user_service = UserService(db)
-    users = await user_service.get_users_by_club(club_id)
+    users = await user_service.get_user_by_club(club_id)
     return users
 
 

@@ -23,3 +23,9 @@ class ClubCreateForm(StatesGroup):
     name = State()
     address = State()
     phone = State()
+
+class DrawRaffleForm(StatesGroup):
+    raffle_id = State()
+
+class DeleteClubForm(StatesGroup):
+    club_id = State()

@@ -1,14 +1,13 @@
 import asyncio
-import logging                                    # ← новое
+import logging
 
 from aiogram import Bot
-from aiogram.client.session.aiohttp import AiohttpSession
 
 from bot.dispatcher import setup_dispatcher
 from config import settings
 
 
-logging.basicConfig(level=logging.INFO)           # ← новое
+logging.basicConfig(level=logging.INFO)
 
 
 async def main() -> None:

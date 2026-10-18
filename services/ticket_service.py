@@ -43,7 +43,10 @@ class TicketService:
 
     async def get_tickets_by_user(self, user_id: int) -> List[Ticket]:
         existing = await self.db.execute(
-            select(Ticket).where(Ticket.user_id == user_id)
+            select(Ticket).where(
+                Ticket.user_id == user_id,
+                Ticket.is_active == True
+            )
         )
         return existing.scalars().all()
 
@@ -84,19 +87,14 @@ class TicketService:
                 "success": False,
                 "message": "User not found, First, write /start.",
             }
-        if not user.club_id:
-            return {
-                "success": False,
-                "message": "Вы не привязаны к клубу. Отсканируйте QR-код в клубе.",
-            }
 
-        ticket = await self.get_ticket_by_number(ticket_data.number, user.club_id)
 
-        # ТЕПЕРЬ ЭТА ПРОВЕРКА СРАБОТАЕТ И ВЕРНЕТ КРАСИВОЕ СООБЩЕНИЕ
+        ticket = await self.get_ticket_by_number(ticket_data.number, ticket_data.club_id)
+
         if ticket is None:
             return {
                 "success": False,
-                "message": f"Билет №{ticket_data.number} не найден"
+                "message": f"Билет №{ticket_data.number} не найден в клубе {ticket_data.club_id}"
             }
 
         if not ticket.is_active:
@@ -114,6 +112,7 @@ class TicketService:
                 "success": False,
                 "message": f"Билет №{ticket_data.number} уже зарегистрирован"
             }
+
 
         ticket.is_registered = True
         ticket.user_id = user.id

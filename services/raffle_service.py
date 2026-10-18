@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 
 from database import AsyncSessionLocal
 from models import Raffle, Ticket, User
@@ -132,6 +132,16 @@ class RaffleService:
 
         winner_ticket = random.choice(tickets)
         winner = await self.db.get(User, winner_ticket.user_id)
+
+        raffle.is_active = False
+
+
+        stmt = update(Ticket).where(Ticket.raffle_id == raffle_id).values(is_active=False)
+        await self.db.execute(stmt)
+
+
+        await self.db.commit()
+
 
         return {
             "raffle_id": raffle.id,

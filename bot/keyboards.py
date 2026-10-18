@@ -8,15 +8,21 @@ def get_main_menu(role: str) -> ReplyKeyboardMarkup:
         [KeyboardButton(text="ℹ️ Помощь")],
     ]
 
-    if role in ["admin", "superadmin"]:
+    if role in "admin":
         keyboard.insert(0, [KeyboardButton(text="📊 Статистика")])
-        keyboard.insert(1, [KeyboardButton(text="✅ Проверить билет")])
-        keyboard.insert(2, [KeyboardButton(text="🎟 Сгенерировать билеты")])
+        keyboard.insert(1, [KeyboardButton(text="👥 Пользователи клуба")])
+        keyboard.insert(2, [KeyboardButton(text="🎟 Билеты клуба")])
         keyboard.insert(3, [KeyboardButton(text="🎲 Создать розыгрыш")])
+        keyboard.insert(4, [KeyboardButton(text="🎟 Сгенерировать билеты")])
+        keyboard.insert(5, [KeyboardButton(text="🏆 Провести розыгрыш")])
+        keyboard.insert(6, [KeyboardButton(text="📄 Скачать отчет")])
+
 
 
     if role == "superadmin":
-        keyboard.insert(0, [KeyboardButton(text="👑 Управление клубами")])
+        keyboard.insert(0, [KeyboardButton(text="📈 Общая статистика")])
+        keyboard.insert(1, [KeyboardButton(text="👑 Управление клубами")])
+        keyboard.insert(2, [KeyboardButton(text="❌ Удалить клуб")])
 
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 

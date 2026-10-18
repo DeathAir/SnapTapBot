@@ -10,10 +10,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# /health должен быть открыт — не защищаем
+
 app.include_router(system.router)
 
-# Все остальные — только с API-ключом
+
 app.include_router(tickets.router,    dependencies=[Depends(verify_api_key)])
 app.include_router(users.router,      dependencies=[Depends(verify_api_key)])
 app.include_router(admin.router,      dependencies=[Depends(verify_api_key)])

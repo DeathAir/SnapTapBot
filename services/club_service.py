@@ -13,7 +13,6 @@ class ClubService:
     def __init__(self, db: AsyncSessionLocal):
         self.db = db
 
-
     async def get_club_by_id(self, club_id: int) -> Club:
         existing_club = await self.db.execute(select(Club).where(Club.id == club_id))
         result = existing_club.scalar_one_or_none()
@@ -101,7 +100,7 @@ class ClubService:
         return existing_club.subscription_end > datetime.now()
 
     async def renew_subscription(self, club_id: int, days: int = 30) -> Club:
-        """Продлить подписку на N дней"""
+
         club = await self.get_club_by_id(club_id)
         from datetime import timedelta
         club.subscription_end = datetime.now() + timedelta(days=days)
@@ -132,14 +131,11 @@ class ClubService:
 
         }
 
-    async def delete_club(self, club_id: int):
+    async def delete_club(self, club_id: int) -> Club:
         club = await self.get_club_by_id(club_id)
-        if club is None:
-            raise HTTPException(status_code=404, detail="Club not found")
-        self.db.delete(club)
+
+        club.is_active = False
+
         await self.db.commit()
-        return {"message": "Club deleted"}
-
-
-
-
+        await self.db.refresh(club)
+        return club

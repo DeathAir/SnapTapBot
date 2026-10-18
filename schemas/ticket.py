@@ -21,6 +21,9 @@ class TicketResponse(TicketBase):
     registered_at: datetime
 
 
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TicketVerify(TicketBase):
     telegram_id: int = Field(..., validation_alias="telegramId", description="Telegram Id Users")
 
@@ -41,6 +44,9 @@ class TicketStatusResponse(BaseModel):
 class TicketListResponse(BaseModel):
     tickets: List[TicketResponse]
     total: int
+
+
+    model_config = ConfigDict(from_attributes=True)
 
 class TicketGenerateRequest(BaseModel):
     club_id: int = Field(..., alias="clubId", description="Club Id")

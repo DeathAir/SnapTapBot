@@ -2,8 +2,9 @@ from aiogram import Dispatcher
 from aiogram.utils import keyboard
 
 from bot.api_client import ApiClient
-from bot.handlers import user, admin
+from bot.handlers import user, admin, superadmin
 from config import settings
+
 
 
 def setup_dispatcher() -> tuple[Dispatcher, ApiClient]:
@@ -18,5 +19,6 @@ def setup_dispatcher() -> tuple[Dispatcher, ApiClient]:
     dp.workflow_data["settings"] = settings
     dp.include_router(user.router)
     dp.include_router(admin.router)
+    dp.include_router(superadmin.router)
 
     return dp, api_client
