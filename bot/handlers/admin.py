@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, BufferedInputFile
 
@@ -7,7 +8,7 @@ from bot.states.forms import GenerateTicketForm, RaffleCreateForm, DrawRaffleFor
 
 router = Router()
 
-
+@router.message(Command("stats"))
 @router.message(F.text == "📊 Статистика")
 async def stats_msg(message: Message, api_client: ApiClient):
     try:
@@ -30,7 +31,7 @@ async def stats_msg(message: Message, api_client: ApiClient):
     except Exception as e:
         await message.answer(f"Ошибка: {e}")
 
-
+@router.message(Command("generate_tickets"))
 @router.message(F.text == "🎟 Сгенерировать билеты")
 async def generate_start(message: Message, state: FSMContext, api_client: ApiClient):
     try:
@@ -98,7 +99,7 @@ async def generate_count(message: Message, state: FSMContext, api_client: ApiCli
     finally:
         await state.clear()
 
-
+@router.message(Command("create_raffle"))
 @router.message(F.text == "🎲 Создать розыгрыш")
 async def cmd_create_raffle(message: Message, state: FSMContext):
     await message.answer("Введите название розыгрыша")
@@ -161,7 +162,7 @@ async def process_raffle_end_date(message: Message, state: FSMContext, api_clien
     finally:
         await state.clear()
 
-
+@router.message(Command("hold_raffle"))
 @router.message(F.text == "🏆 Провести розыгрыш")
 async def cmd_draw_raffle(message: Message, state: FSMContext, api_client: ApiClient):
     try:
@@ -221,6 +222,7 @@ async def process_draw_raffle(message: Message, state: FSMContext, api_client: A
     finally:
         await state.clear()
 
+@router.message(Command("users_club"))
 @router.message(F.text == "👥 Пользователи клуба")
 async def cmd_admin_user_stats(message: Message, api_client: ApiClient):
     try:
@@ -241,6 +243,7 @@ async def cmd_admin_user_stats(message: Message, api_client: ApiClient):
     except Exception as e:
         await message.answer(f"❌ Ошибка получения пользователей: {e}")
 
+@router.message(Command("tickets_club"))
 @router.message(F.text == "🎟 Билеты клуба")
 async def cmd_admin_tickets(message: Message, api_client: ApiClient):
     try:
@@ -259,7 +262,7 @@ async def cmd_admin_tickets(message: Message, api_client: ApiClient):
     except Exception as e:
         await message.answer(f"❌ Ошибка получения билетов: {e}")
 
-
+@router.message(Command("download_report"))
 @router.message(F.text == "📄 Скачать отчет")
 async def cmd_get_report(message: Message, api_client: ApiClient):
     try:

@@ -62,15 +62,45 @@ async def cmd_start(
         await state.set_state(RegisterForm.username)
 
 
-@router.message(F.text == "ℹ️ Помощь")
 @router.message(Command("help"))
-async def cmd_help(message: Message) -> None:
-    await message.answer(
-        "Доступные команды:\n"
-        "/start — главное меню\n"
-        "/help — эта справка\n"
-        "/my_tickets — посмотреть билеты"
-    )
+@router.message(F.text == "ℹ️ Помощь")
+async def cmd_help(message: Message, api_client: ApiClient) -> None:
+    try:
+
+        user = await api_client.get_user(message.from_user.id)
+        role = user.get("role", "user")
+
+        text = (
+            "ℹ️ <b>Доступные команды:</b>\n\n"
+            "/start — Главное меню\n"
+            "/help — Эта справка\n"
+            "/my_tickets — Мои билеты\n"
+        )
+
+
+        if role in ["admin", "superadmin"]:
+            text += (
+                "\n🛡 <b>Команды администратора:</b>\n"
+                "/stats — Статистика клуба\n"
+                "/users_club — Пользователи клуба\n"
+                "/tickets_club — Билеты клуба\n"
+                "/generate_tickets — Сгенерировать билеты\n"
+                "/create_raffle — Создать розыгрыш\n"
+                "/hold_raffle — Провести розыгрыш\n"
+                "/download_report — Скачать отчет\n"
+            )
+
+        # Если супер-админ, добавляем его команды
+        if role == "superadmin":
+            text += (
+                "\n👑 <b>Команды супер-админа:</b>\n"
+                "/new_club — Создать новый клуб\n"
+            )
+
+        await message.answer(text, parse_mode="HTML")
+
+    except Exception as e:
+        await message.answer("ℹ️ Доступные команды:\n/start\n/help\n/my_tickets")
 
 
 @router.message(RegisterForm.username)

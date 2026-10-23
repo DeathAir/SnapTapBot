@@ -37,7 +37,10 @@ class TicketService:
 
     async def get_tickets_by_club(self, club_id: int) -> List[Ticket]:
         existing = await self.db.execute(
-            select(Ticket).where(Ticket.club_id == club_id)
+            select(Ticket).where(
+                Ticket.club_id == club_id,
+                Ticket.is_active == True
+            )
         )
         return existing.scalars().all()
 
@@ -45,7 +48,7 @@ class TicketService:
         existing = await self.db.execute(
             select(Ticket).where(
                 Ticket.user_id == user_id,
-                Ticket.is_active == True
+                Ticket.is_active == True,
             )
         )
         return existing.scalars().all()
@@ -68,17 +71,33 @@ class TicketService:
         )
         return existing.scalars().all()
 
-    async def get_ticket_status(self, number: int, club_id: int) -> dict:
-        existing = await self.db.execute(
-            select(Ticket).where(
-                Ticket.number == number,
-                Ticket.club_id == club_id
+    async def get_tickets_stats(self, club_id: int) -> dict:
+        total_result = await self.db.execute(
+            select(func.count()).where(
+                Ticket.club_id == club_id,
+                Ticket.is_active == True
             )
         )
-        result = existing.scalar_one_or_none()
-        if result is None:
-            raise HTTPException(status_code=404, detail="Ticket not found")
-        return {"number": result.number, "is_registered": result.is_registered}
+        total = total_result.scalar() or 0
+
+        registered_result = await self.db.execute(
+            select(func.count()).where(
+                Ticket.club_id == club_id,
+                Ticket.is_registered == True,
+                Ticket.is_active == True
+            )
+        )
+        registered = registered_result.scalar() or 0
+
+        free = total - registered
+        progress = (registered / total * 100) if total > 0 else 0
+
+        return {
+            "total": total,
+            "registered": registered,
+            "free": free,
+            "progress_percent": round(progress, 2)
+        }
 
     async def verify_ticket(self, ticket_data: TicketVerify) -> dict:
         user = await self.user_service.get_user_by_telegram_id(ticket_data.telegram_id)
@@ -87,7 +106,6 @@ class TicketService:
                 "success": False,
                 "message": "User not found, First, write /start.",
             }
-
 
         ticket = await self.get_ticket_by_number(ticket_data.number, ticket_data.club_id)
 
@@ -112,7 +130,6 @@ class TicketService:
                 "success": False,
                 "message": f"Билет №{ticket_data.number} уже зарегистрирован"
             }
-
 
         ticket.is_registered = True
         ticket.user_id = user.id
@@ -228,30 +245,6 @@ class TicketService:
 
         await self.db.commit()
         return {"message": f"Удалено {count} билетов"}
-
-    async def get_tickets_stats(self, club_id: int) -> dict:
-        total_result = await self.db.execute(
-            select(func.count()).where(Ticket.club_id == club_id)
-        )
-        total = total_result.scalar() or 0
-
-        registered_result = await self.db.execute(
-            select(func.count()).where(
-                Ticket.club_id == club_id,
-                Ticket.is_registered == True
-            )
-        )
-        registered = registered_result.scalar() or 0
-
-        free = total - registered
-        progress = (registered / total * 100) if total > 0 else 0
-
-        return {
-            "total": total,
-            "registered": registered,
-            "free": free,
-            "progress_percent": round(progress, 2)
-        }
 
     async def get_club_stats(self, club_id: int) -> dict:
         tickets_stats = await self.get_tickets_stats(club_id)

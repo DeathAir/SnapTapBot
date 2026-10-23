@@ -10,7 +10,7 @@ from bot.states.forms import ClubCreateForm, DeleteClubForm
 
 router = Router()
 
-
+@router.message(Command("club_manage"))
 @router.message(F.text == "👑 Управление клубами")
 async def cmd_manage_clubs(message: Message, api_client: ApiClient):
     try:
@@ -71,7 +71,7 @@ async def process_club_phone(message: Message, state: FSMContext, api_client: Ap
     finally:
         await state.clear()
 
-
+@router.message(Command("overall_progress"))
 @router.message(F.text == "📈 Общая статистика")
 async def cmd_superadmin_stats(message: Message, api_client: ApiClient):  # ← Новое имя функции
     try:
@@ -90,6 +90,7 @@ async def cmd_superadmin_stats(message: Message, api_client: ApiClient):  # ← 
     except Exception as e:
         await message.answer(f"Ошибка: {e}")
 
+@router.message(Command("delete_club"))
 @router.message(F.text == "❌ Удалить клуб")
 async def process_superadmin_clubs(message: Message, state: FSMContext):
     await message.answer("Введите ID клуба для удаления:")
