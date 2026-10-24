@@ -5,8 +5,7 @@ from alembic import context
 import sys
 from pathlib import Path
 
-import locale
-locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+# locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 sys.path.append(str(Path(__file__).parent.parent))
 
