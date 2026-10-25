@@ -7,6 +7,7 @@ from aiogram.types import Message
 from bot import api_client
 from bot.api_client import ApiClient
 from bot.states.forms import ClubCreateForm, DeleteClubForm
+from config import settings
 
 router = Router()
 
@@ -112,3 +113,75 @@ async def process_delete_club(message: Message, state: FSMContext, api_client: A
         await message.answer(f"Ошибка: {e}")
     finally:
         await state.clear()
+
+@router.message(Command("make_admin"))
+async def make_admin(message: Message, api_client: ApiClient):
+    if message.from_user.id != settings.superadmin_id:
+        await message.answer("⛔ У тебя нет прав")
+        return
+    parts = message.text.split()
+
+    if len(parts) != 3:
+        await message.answer(
+            "❌ Неверный формат команды.\n"
+            "Используй: <code>/make_admin &lt;telegram_id&gt; &lt;club_id&gt;</code>\n"
+            "Пример: <code>/make_admin 123456789 2</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    try:
+        target_telegram_id = int(parts[1])
+        club_id = int(parts[2])
+    except ValueError:
+        await message.answer("❌ Ошибка: ID пользователя и номер клуба должны быть числами.")
+        return
+
+    try:
+        await api_client.update_user(
+            telegram_id=target_telegram_id,
+            role="admin",
+            club_id=club_id
+        )
+        await message.answer(
+            f"✅ Успешно!\nПользователь <code>{target_telegram_id}</code> теперь Админ клуба <code>{club_id}</code>.",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        await message.answer(f"❌ Ошибка при обновлении: {e}")
+
+
+@router.message(Command("list_users"))
+async def cmd_list_users(message: Message, api_client: ApiClient):
+
+    if message.from_user.id != settings.superadmin_id:
+        await message.answer("⛔ У тебя нет прав.")
+        return
+
+    try:
+        users = await api_client.get_all_users()
+
+        if not users:
+            await message.answer("В базе пока нет пользователей.")
+            return
+
+        text = "👥 <b>Список всех пользователей:</b>\n\n"
+
+        for u in users:
+            username = u.get('username', 'без_ника')
+            tg_id = u.get('telegram_id')
+            role = u.get('role')
+            club_id = u.get('club_id')
+
+            text += (
+                f"👤 @{username}\n"
+                f"🆔 ID: <code>{tg_id}</code>\n"
+                f"👑 Роль: {role} | Клуб: {club_id}\n"
+                f"➖➖➖➖➖➖➖➖\n"
+            )
+
+        await message.answer(text, parse_mode="HTML")
+
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
+

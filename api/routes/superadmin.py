@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.dependencies import get_db
-from schemas import ClubCreate, ClubResponse, SuperAdminStats
+from schemas import ClubCreate, ClubResponse, SuperAdminStats, UserResponse
 from services.club_service import ClubService
 from services.ticket_service import TicketService
 from services.user_service import UserService
@@ -65,3 +65,9 @@ async def stats(db: AsyncSession = Depends(get_db)):
         total_registered=total_registered,
         overall_progress=round(overall_progress, 2)
     )
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_all_users(db: AsyncSession = Depends(get_db)):
+    user_service = UserService(db)
+    users = await user_service.get_all_users()
+    return users

@@ -10,6 +10,7 @@ from urllib.parse import urlparse, parse_qs
 from bot.api_client import ApiClient
 from bot.keyboards import phone_choice_keyboard, phone_confirm_keyboard, get_main_menu
 from bot.states.forms import RegisterForm
+from config import settings
 
 router = Router()
 
@@ -23,16 +24,17 @@ async def register_user(
     data = await state.get_data()
     username = data.get("username")
     telegram_id = message.from_user.id
-
+    role = "superadmin" if telegram_id == settings.superadmin_id else "user"
     try:
         await api_client.get_or_create_user(
             telegram_id=telegram_id,
             username=username,
             phone=phone,
+            role=role,
         )
         await message.answer(
             "✅ Ты зарегистрирован!",
-            reply_markup=get_main_menu("user"),
+            reply_markup=get_main_menu(role),
         )
         await state.clear()
     except Exception as e:

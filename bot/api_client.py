@@ -130,6 +130,10 @@ class ApiClient:
             params={"club_id": club_id}
         )
 
+    async def get_all_users(self) -> list:
+        return await self._get("/superadmin/users")
+
+
     async def get_club_tickets(self, club_id: int) -> dict:
 
         return await self._get(
