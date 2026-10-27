@@ -164,7 +164,7 @@ class ApiClient:
             user_id: int,
             title: str,
             description: str,
-            prize: str,
+            prizes: list[str], 
             start_date: str,
             end_date: str,
             club_id: int,
@@ -175,7 +175,7 @@ class ApiClient:
             json={
                 "title": title,
                 "description": description,
-                "prize": prize,
+                "prizes": prizes,
                 "start_date": start_date,
                 "end_date": end_date,
                 "club_id": club_id,

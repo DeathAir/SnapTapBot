@@ -6,7 +6,7 @@ from typing import Optional
 class RaffleBase(BaseModel):
     title: str
     description: str
-    prize: str
+    prizes: list[str]
     start_date: datetime
     end_date: datetime
 
@@ -29,7 +29,7 @@ class RaffleResponse(RaffleBase):
 class RaffleUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    prize: Optional[str] = None
+    prizes: Optional[list[str]] = None  # <-- ИСПРАВЛЕНО
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_active: Optional[bool] = None

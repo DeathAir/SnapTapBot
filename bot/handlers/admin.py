@@ -8,6 +8,7 @@ from bot.states.forms import GenerateTicketForm, RaffleCreateForm, DrawRaffleFor
 
 router = Router()
 
+
 @router.message(Command("stats"))
 @router.message(F.text == "📊 Статистика")
 async def stats_msg(message: Message, api_client: ApiClient):
@@ -31,6 +32,7 @@ async def stats_msg(message: Message, api_client: ApiClient):
     except Exception as e:
         await message.answer(f"Ошибка: {e}")
 
+
 @router.message(Command("generate_tickets"))
 @router.message(F.text == "🎟 Сгенерировать билеты")
 async def generate_start(message: Message, state: FSMContext, api_client: ApiClient):
@@ -46,7 +48,8 @@ async def generate_start(message: Message, state: FSMContext, api_client: ApiCli
 
         text = "Доступные розыгрыши\n\n"
         for r in raffles:
-            text += f"🆔 ID: {r.get('id')} | {r.get('title')} (Приз: {r.get('prize')})\n"
+            prizes = ", ".join(r.get('prizes', []))
+            text += f"🆔 ID: {r.get('id')} | {r.get('title')} (Призы: {prizes})\n"
         text += "\nВведи ID розыгрыша, для которого нужно создать билеты:"
 
         await message.answer(text)
@@ -99,6 +102,7 @@ async def generate_count(message: Message, state: FSMContext, api_client: ApiCli
     finally:
         await state.clear()
 
+
 @router.message(Command("create_raffle"))
 @router.message(F.text == "🎲 Создать розыгрыш")
 async def cmd_create_raffle(message: Message, state: FSMContext):
@@ -116,15 +120,40 @@ async def process_raffle_title(message: Message, state: FSMContext):
 @router.message(RaffleCreateForm.description)
 async def process_raffle_description(message: Message, state: FSMContext):
     await state.update_data(description=message.text)
-    await message.answer("Введите главный приз (если их несколько, перечисли через запятую):")
-    await state.set_state(RaffleCreateForm.prize)
+    await message.answer("Сколько призовых мест? (введи число, например 1 или 3):")
+    await state.set_state(RaffleCreateForm.prizes_count)
 
 
-@router.message(RaffleCreateForm.prize)
-async def process_raffle_prize(message: Message, state: FSMContext):
-    await state.update_data(prize=message.text)
-    await message.answer("Введи дату начала в формате ГГГГ-ММ-ДД:")
-    await state.set_state(RaffleCreateForm.start_date)
+@router.message(RaffleCreateForm.prizes_count)
+async def process_prizes_count(message: Message, state: FSMContext):
+    if not message.text.isdigit() or int(message.text) < 1:
+        await message.answer("Пожалуйста, введи целое число больше 0:")
+        return
+
+    count = int(message.text)
+    await state.update_data(prizes_count=count, prizes=[], current_prize_num=1)
+    await message.answer("Введи приз для 1-го места (например, 'PlayStation 5'):")
+    await state.set_state(RaffleCreateForm.current_prize)
+
+
+@router.message(RaffleCreateForm.current_prize)
+async def process_current_prize(message: Message, state: FSMContext):
+    prize = message.text.strip()
+    data = await state.get_data()
+
+    prizes_list = data.get("prizes", [])
+    prizes_list.append(prize)
+
+    current_num = data.get("current_prize_num")
+    total_count = data.get("prizes_count")
+
+    if current_num < total_count:
+        await state.update_data(prizes=prizes_list, current_prize_num=current_num + 1)
+        await message.answer(f"Введи приз для {current_num + 1}-го места:")
+    else:
+        await state.update_data(prizes=prizes_list)
+        await message.answer("Все призы записаны! Теперь введи дату начала в формате ГГГГ-ММ-ДД:")
+        await state.set_state(RaffleCreateForm.start_date)
 
 
 @router.message(RaffleCreateForm.start_date)
@@ -151,7 +180,7 @@ async def process_raffle_end_date(message: Message, state: FSMContext, api_clien
             user_id=message.from_user.id,
             title=data.get('title'),
             description=data.get('description'),
-            prize=data.get('prize'),
+            prizes=data.get('prizes'),
             start_date=start_iso,
             end_date=end_iso,
             club_id=club_id
@@ -161,6 +190,7 @@ async def process_raffle_end_date(message: Message, state: FSMContext, api_clien
         await message.answer(f"Ошибка создания розыгрыша: {e}")
     finally:
         await state.clear()
+
 
 @router.message(Command("hold_raffle"))
 @router.message(F.text == "🏆 Провести розыгрыш")
@@ -179,7 +209,7 @@ async def cmd_draw_raffle(message: Message, state: FSMContext, api_client: ApiCl
         text = "🎲 Доступные розыгрыши:\n\n"
         for r in active_raffles:
             text += f"ID: {r.get('id')} | {r.get('title')}\n"
-        text += "\nВведи ID розыгрыша, чтобы выбрать победителя:"
+        text += "\nВведи ID розыгрыша, чтобы выбрать победителей:"
 
         await message.answer(text)
         await state.set_state(DrawRaffleForm.raffle_id)
@@ -197,20 +227,23 @@ async def process_draw_raffle(message: Message, state: FSMContext, api_client: A
     raffle_id = int(message.text)
 
     try:
-        await message.answer("⏳ Выбираю победителя...")
+        await message.answer("⏳ Выбираю победителей...")
         result = await api_client.draw_winner(raffle_id)
 
         title = result.get('title')
-        prize = result.get('prize')
-        username = result.get('winner_username')
-        ticket = result.get('winner_ticket')
+        winners = result.get('winners', [])
 
-        text = (
-            f"🎉 Розыгрыш «{title}» завершен!\n\n"
-            f"🏆 Победитель: @{username}\n"
-            f"🎫 Билет №{ticket}\n"
-            f"🎁 Приз: {prize}"
-        )
+        text = f"🎉 Розыгрыш «{title}» завершен!\n\n"
+
+        for w in winners:
+            place = w.get('place')
+            prize = w.get('prize')
+            username = w.get('username')
+            ticket = w.get('ticket_number')
+
+            emoji = "🥇" if place == 1 else "🥈" if place == 2 else "🥉" if place == 3 else f"{place}."
+            text += f"{emoji} Место {place}: @{username} (Билет №{ticket})\n"
+            text += f"🎁 Приз: {prize}\n\n"
 
         await message.answer(text)
 
@@ -221,6 +254,7 @@ async def process_draw_raffle(message: Message, state: FSMContext, api_client: A
         await message.answer(f"❌ Ошибка при проведении розыгрыша: {e}")
     finally:
         await state.clear()
+
 
 @router.message(Command("users_club"))
 @router.message(F.text == "👥 Пользователи клуба")
@@ -243,6 +277,7 @@ async def cmd_admin_user_stats(message: Message, api_client: ApiClient):
     except Exception as e:
         await message.answer(f"❌ Ошибка получения пользователей: {e}")
 
+
 @router.message(Command("tickets_club"))
 @router.message(F.text == "🎟 Билеты клуба")
 async def cmd_admin_tickets(message: Message, api_client: ApiClient):
@@ -261,6 +296,7 @@ async def cmd_admin_tickets(message: Message, api_client: ApiClient):
         await message.answer(text)
     except Exception as e:
         await message.answer(f"❌ Ошибка получения билетов: {e}")
+
 
 @router.message(Command("download_report"))
 @router.message(F.text == "📄 Скачать отчет")

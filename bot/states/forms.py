@@ -15,7 +15,8 @@ class GenerateTicketForm(StatesGroup):
 class RaffleCreateForm(StatesGroup):
     title = State()
     description = State()
-    prize = State()
+    prizes_count = State()
+    current_prize = State()
     start_date = State()
     end_date = State()
 
