@@ -94,6 +94,11 @@ class UserService:
             user.username = user_data.username
         if user_data.phone is not None:
             user.phone = user_data.phone
+        if user_data.role is not None:
+            user.role = user_data.role
+        if user_data.club_id is not None:
+            user.club_id = user_data.club_id
+
         await self.db.commit()
         await self.db.refresh(user)
         return user

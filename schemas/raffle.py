@@ -38,3 +38,15 @@ class RaffleUpdate(BaseModel):
 class RaffleListResponse(BaseModel):
     raffles: list[RaffleResponse]
     total: int
+
+class WinnerInfo(BaseModel):
+    place: int
+    prize: str
+    ticket_number: int
+    username: str
+    telegram_id: Optional[int] = None
+
+class RaffleDrawResponse(BaseModel):
+    raffle_id: int
+    title: str
+    winners: list[WinnerInfo]

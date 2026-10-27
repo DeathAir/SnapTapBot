@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import BigInteger, String, Boolean, DateTime, ForeignKey, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
@@ -10,7 +11,7 @@ class Raffle(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(125), nullable=False)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
-    prize: Mapped[str] = mapped_column(String(500), nullable=False)
+    prizes: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
 
     club_id: Mapped[int] = mapped_column(
         BigInteger,

@@ -1,4 +1,3 @@
-
 services:
   # База данных
   db:
@@ -30,6 +29,11 @@ services:
       context: .
       dockerfile: Dockerfile.bot
     env_file: .env
+    # ВОТ ЭТИ СТРОКИ ЗАСТАВЯТ БОТА ИДТИ ЧЕРЕЗ VPN
+    environment:
+      - HTTP_PROXY=http://host.docker.internal:10809
+      - HTTPS_PROXY=http://host.docker.internal:10809
+      - NO_PROXY=api,localhost,127.0.0.1
     depends_on:
       api:
         condition: service_started

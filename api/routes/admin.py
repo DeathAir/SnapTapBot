@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import Response
 from api.dependencies import get_db
-from schemas import AdminStats, AdminGenerateRequest, RaffleCreate, RaffleResponse
+from schemas import AdminStats, AdminGenerateRequest, RaffleCreate, RaffleResponse, RaffleDrawResponse
 from services.qr_service import QRService
 from services.raffle_service import RaffleService
 from services.report_service import ReportService
@@ -17,10 +17,10 @@ async def admin_stats(club_id: int, db: AsyncSession = Depends(get_db)):
     ticket_service = TicketService(db, UserService(db))
     stats = await ticket_service.get_tickets_stats(club_id)
 
-    # Обрати внимание на названия аргументов — они должны совпадать со схемой!
+
     return AdminStats(
         total_ticket=stats["total"],
-        remaining_ticket=stats["registered"],  # Или stats["remaining"], смотри что там в словаре
+        remaining_ticket=stats["registered"],
         free_ticket=stats["free"],
         progress_percent=stats["progress_percent"]
     )
@@ -79,6 +79,7 @@ async def create_raffles(data: RaffleCreate, user_id: int, db: AsyncSession = De
 
     return raffle
 
+
 @router.post("/raffles/{raffle_id}/activate", response_model=RaffleResponse)
 async def raffle_activate(raffle_id: int, db: AsyncSession = Depends(get_db)):
     raffle_service = RaffleService(db)
@@ -93,7 +94,7 @@ async def raffle_deactivate(raffle_id: int, db: AsyncSession = Depends(get_db)):
     return raffle
 
 
-@router.post("/raffles/{raffle_id}/draw")
+@router.post("/raffles/{raffle_id}/draw", response_model=RaffleDrawResponse)
 async def raffle_draw(raffle_id: int, db: AsyncSession = Depends(get_db)):
     raffle_service = RaffleService(db)
     winner = await raffle_service.draw_winner(raffle_id)
