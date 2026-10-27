@@ -51,7 +51,7 @@ class RaffleService:
         raffle = Raffle(
             title=data.title,
             description=data.description,
-            prize=data.prize,
+            prizes=data.prizes,
             club_id=data.club_id,
             created_by=user_id,
             start_date=data.start_date,
@@ -71,8 +71,8 @@ class RaffleService:
             raffle.title = data.title
         if data.description is not None:
             raffle.description = data.description
-        if data.prize is not None:
-            raffle.prize = data.prize
+        if data.prizes is not None:
+            raffle.prizes = data.prizes
         if data.start_date is not None:
             raffle.start_date = data.start_date
         if data.end_date is not None:
@@ -125,31 +125,38 @@ class RaffleService:
                 Ticket.is_registered == True
             )
         )
-        tickets = result.scalars().all()
+        tickets = list(result.scalars().all())
 
         if not tickets:
             raise HTTPException(status_code=404, detail="No registered tickets")
 
-        winner_ticket = random.choice(tickets)
-        winner = await self.db.get(User, winner_ticket.user_id)
+        prizes = raffle.prizes if raffle.prizes else ["Главный приз"]
+        winners_count = min(len(prizes), len(tickets))
+        selected_tickets = random.sample(tickets, winners_count)
+
+        winners_list = []
+        for i in range(winners_count):
+            ticket = selected_tickets[i]
+            user = await self.db.get(User, ticket.user_id)
+            winners_list.append({
+                "place": i + 1,
+                "prize": prizes[i],
+                "ticket_number": ticket.number,
+                "username": user.username if user else "Неизвестный",
+                "telegram_id": user.telegram_id if user else None
+            })
 
         raffle.is_active = False
-
 
         stmt = update(Ticket).where(Ticket.raffle_id == raffle_id).values(is_active=False)
         await self.db.execute(stmt)
 
-
         await self.db.commit()
-
 
         return {
             "raffle_id": raffle.id,
             "title": raffle.title,
-            "prize": raffle.prize,
-            "winner_ticket": winner_ticket.number,
-            "winner_username": winner.username if winner else None,
-            "winner_telegram_id": winner.telegram_id if winner else None
+            "winners": winners_list
         }
 
     async def get_raffle_results(self, raffle_id: int) -> dict:
@@ -177,7 +184,7 @@ class RaffleService:
         return {
             "raffle_id": raffle.id,
             "title": raffle.title,
-            "prize": raffle.prize,
+            "prizes": raffle.prizes,
             "total_participants": len(participants),
             "participants": participants
         }
